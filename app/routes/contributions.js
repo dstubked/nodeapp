@@ -44,23 +44,23 @@ function ContributionsHandler(db) {
         } = req.session;
 
         //validate contributions
-        const validations = [isNaN(preTax), isNaN(afterTax), isNaN(roth), preTax < 0, afterTax < 0, roth < 0];
-        const isInvalid = validations.some(validation => validation);
-        if (isInvalid) {
-            return res.render("contributions", {
-                updateError: "Invalid contribution percentages",
-                userId,
-                environmentalScripts
-            });
-        }
+        //const validations = [isNaN(preTax), isNaN(afterTax), isNaN(roth), preTax < 0, afterTax < 0, roth < 0];
+        //const isInvalid = validations.some(validation => validation);
+        //if (isInvalid) {
+        //    return res.render("contributions", {
+        //        updateError: "Invalid contribution percentages",
+        //        userId,
+        //        environmentalScripts
+        //    });
+        //}
         // Prevent more than 30% contributions
-        if (preTax + afterTax + roth > 30) {
-            return res.render("contributions", {
-                updateError: "Contribution percentages cannot exceed 30 %",
-                userId,
-                environmentalScripts
-            });
-        }
+        //if (preTax + afterTax + roth > 30) {
+        //    return res.render("contributions", {
+        //        updateError: "Contribution percentages cannot exceed 30 %",
+        //        userId,
+        //        environmentalScripts
+        //    });
+        //}
 
         contributionsDAO.update(userId, preTax, afterTax, roth, (err, contributions) => {
 
