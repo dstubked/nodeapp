@@ -1,0 +1,43 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
+  KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-eDAHx6"
+
+build:
+  stage: build
+  tags:
+    - g-shell-only
+  script:
+    - docker build -t $DOCKER_IMAGE .
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker push $DOCKER_IMAGE
+
+deploy:
+  stage: deploy
+  image: 
+    name: amazon/aws-cli
+    entrypoint: [""]
+  script:
+    - yum update -y
+    - yum install -y curl jq
+    - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    - aws secretsmanager get-secret-value --secret-id $KUBECONFIG_SECRET_ARN --query SecretString --output text > kubeconfig
+    - export KUBECONFIG=./kubeconfig
+    - MONGODB_CREDS=$(aws secretsmanager get-secret-value --secret-id $MONGODB_SECRET_ARN --query SecretString --output text)
+    - DB_USERNAME=$(echo $MONGODB_CREDS | jq -r .username)
+    - DB_PASSWORD=$(echo $MONGODB_CREDS | jq -r .password)
+    - MONGO_IP=$(aws ec2 describe-instances --instance-ids $(echo $MONGODB_INSTANCE_ARN | cut -d'/' -f2) --query "Reservations[].Instances[].PrivateIpAddress" --output text)
+    - MONGODB_URI="mongodb://${DB_USERNAME}:${DB_PASSWORD}@${MONGO_IP}:27017/nodegoat?authSource=admin"
+    - kubectl create secret generic mongodb-secret --from-literal=MONGODB_URI=$MONGODB_URI --dry-run=client -o yaml | kubectl apply -f -
+    - AWS_ACCESS_KEY_ID_TRIMMED=$(echo "$AWS_ACCESS_KEY_ID" | tr -d '[:space:]')
+    - AWS_SECRET_ACCESS_KEY_TRIMMED=$(echo "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')
+    - kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID_TRIMMED" --from-literal=AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY_TRIMMED" --dry-run=client -o yaml | kubectl apply -f -
+    - sed -i "s|DOCKER_IMAGE|$DOCKER_IMAGE|g" k8s/deployment.yaml
+    - kubectl apply -f k8s/rbac.yaml
+    - kubectl apply -f k8s/deployment.yaml
+    - kubectl apply -f k8s/service.yaml
+    - kubectl rollout status deployment/nodegoat
