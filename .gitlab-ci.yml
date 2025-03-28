@@ -4,7 +4,7 @@ stages:
 
 variables:
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
-  KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-eDAHx6"
+  KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-b2V0mI"
 
 build:
   stage: build
