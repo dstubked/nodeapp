@@ -16,7 +16,7 @@ spec:
       containers:
       - name: nodegoat
         image: DOCKER_IMAGE
-        command: ["sleep", "3600"]
+        command: ["npm", "start"]
         ports:
         - containerPort: 4000
         env:
