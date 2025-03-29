@@ -7,7 +7,7 @@ stages:
 variables:
   SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
-  KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-b2V0mI"
+  ECR_IMAGE: 536697230138.dkr.ecr.ap-southeast-1.amazonaws.com/app/nodegoat:$CI_PIPELINE_IID
 
 trivy-scan:
   stage: trivy-scan
@@ -21,15 +21,17 @@ trivy-scan:
 
 kubiscan:
   stage: kubiscan
-  image: python:latest
+  image: python:3.8-slim
   script:
-    # Install KubiScan
-    - pip install kubiscan
-    # Dynamically scan all YAML files in the specified directory
+    # Install dependencies and clone the KubiScan repository
+    - apt-get update && apt-get install -y git python3-pip
+    - git clone https://github.com/cyberark/KubiScan.git
+    - pip install -r KubiScan/requirements.txt
+    # Run KubiScan against all YAML files in the specified directory
     - echo "Scanning RBAC manifests for risky permissions..."
     - for file in $SCAN_DIR/*.yaml; do
         echo "Scanning $file...";
-        kubiscan scan --file $file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
+        python3 KubiScan/KubiScan.py scan --file $file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
       done
     # Output consolidated results to job logs
     - cat kubiscan-results.txt
@@ -39,9 +41,10 @@ build:
   tags:
     - g-shell-only
   script:
+    - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 536697230138.dkr.ecr.ap-southeast-1.amazonaws.com
     - docker build -t $DOCKER_IMAGE .
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-    - docker push $DOCKER_IMAGE
+    - docker tag $DOCKER_IMAGE $ECR_IMAGE
+    - docker push $ECR_IMAGE
 
 deploy:
   stage: deploy
