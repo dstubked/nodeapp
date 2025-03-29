@@ -53,8 +53,17 @@ deploy:
     - kubectl apply -f k8s/rbac.yaml
     - kubectl apply -f k8s/deployment.yaml
     - kubectl apply -f k8s/service.yaml
+    # Wait for deployment rollout to complete
     - kubectl rollout status deployment/nodegoat
-    # Run the seed command inside the NodeGoat pod
-    - NODEGOAT_POD=$(kubectl get pods --selector=app=nodegoat --output=jsonpath='{.items[0].metadata.name}')
-    - echo "Running database seed command in pod $NODEGOAT_POD..."
-    - kubectl exec $NODEGOAT_POD -- npm run db:seed
+    # Wait for the new pod to be ready
+    - echo "Waiting for new NodeGoat pod to be ready..."
+    - NEW_NODEGOAT_POD=""
+    - until [ ! -z "$NEW_NODEGOAT_POD" ]; do
+        NEW_NODEGOAT_POD=$(kubectl get pods --selector=app=nodegoat --field-selector=status.phase=Running \
+          --output=jsonpath='{.items[0].metadata.name}');
+        echo "Waiting for new pod...";
+        sleep 5;
+      done
+    # Run the seed command inside the new NodeGoat pod
+    - echo "Running database seed command in pod $NEW_NODEGOAT_POD..."
+    - kubectl exec $NEW_NODEGOAT_POD -- npm run db:seed
