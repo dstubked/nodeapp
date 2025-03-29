@@ -21,17 +21,17 @@ trivy-scan:
 
 kubiscan:
   stage: kubiscan
-  image: python:3.8-slim
+  image: docker:latest
+  services:
+    - docker:dind
   script:
-    # Install dependencies and clone the KubiScan repository
-    - apt-get update && apt-get install -y git python3-pip
-    - git clone https://github.com/cyberark/KubiScan.git
-    - pip install -r KubiScan/requirements.txt
+    # Pull the KubiScan Docker image
+    - docker pull cyberark/kubiscan:latest
     # Run KubiScan against all YAML files in the specified directory
     - echo "Scanning RBAC manifests for risky permissions..."
     - for file in $SCAN_DIR/*.yaml; do
         echo "Scanning $file...";
-        python3 KubiScan/KubiScan.py scan --file $file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
+        docker run --rm -v $(pwd):/tmp cyberark/kubiscan scan --file /tmp/$file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
       done
     # Output consolidated results to job logs
     - cat kubiscan-results.txt
