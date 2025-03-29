@@ -67,7 +67,7 @@ deploy:
     - AWS_ACCESS_KEY_ID_TRIMMED=$(echo "$AWS_ACCESS_KEY_ID" | tr -d '[:space:]')
     - AWS_SECRET_ACCESS_KEY_TRIMMED=$(echo "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')
     - kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID_TRIMMED" --from-literal=AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY_TRIMMED" --dry-run=client -o yaml | kubectl apply -f -
-    - sed -i "s|DOCKER_IMAGE|$DOCKER_IMAGE|g" k8s/deployment.yaml
+    - sed -i "s|DOCKER_IMAGE|$ECR_IMAGE|g" k8s/deployment.yaml
     - kubectl apply -f k8s/rbac.yaml
     - kubectl apply -f k8s/deployment.yaml
     - kubectl apply -f k8s/service.yaml
