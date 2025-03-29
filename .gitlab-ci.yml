@@ -20,12 +20,7 @@ trivy-scan:
     - trivy fs --scanners misconfig,vuln,secret --exit-code 0 --severity HIGH,CRITICAL .
 
 kubescape:
-  stages:
-  - scan
-variables:
-  SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
-scan-rbac:
-  stage: scan
+  stage: kubescape
   image: armosec/kubescape:latest
   script:
     # Dynamically scan all YAML files in the specified directory
