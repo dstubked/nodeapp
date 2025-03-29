@@ -65,3 +65,7 @@ deploy:
     - kubectl apply -f k8s/deployment.yaml
     - kubectl apply -f k8s/service.yaml
     - kubectl rollout status deployment/nodegoat
+    # Run the seed command inside the NodeGoat pod
+    - NODEGOAT_POD=$(kubectl get pods --selector=app=nodegoat --output=jsonpath='{.items[0].metadata.name}')
+    - echo "Running database seed command in pod $NODEGOAT_POD..."
+    - kubectl exec $NODEGOAT_POD -- npm run db:seed
