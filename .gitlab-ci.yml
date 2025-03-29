@@ -1,14 +1,16 @@
 stages:
-  - scan
+  - trivy-scan
+  - kubiscan
   - build
   - deploy
 
 variables:
+  SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
   KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-b2V0mI"
 
-scan:
-  stage: scan
+trivy-scan:
+  stage: trivy-scan
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
@@ -16,6 +18,21 @@ scan:
     # Scan for vulnerabilities in the code repository
     - echo "Scanning for vulnerabilities..."
     - trivy fs --scanners misconfig,vuln,secret --exit-code 1 --severity HIGH,CRITICAL .
+
+kubiscan:
+  stage: kubiscan
+  image: python:latest
+  script:
+    # Install KubiScan
+    - pip install kubiscan
+    # Dynamically scan all YAML files in the specified directory
+    - echo "Scanning RBAC manifests for risky permissions..."
+    - for file in $SCAN_DIR/*.yaml; do
+        echo "Scanning $file...";
+        kubiscan scan --file $file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
+      done
+    # Output consolidated results to job logs
+    - cat kubiscan-results.txt
 
 build:
   stage: build
