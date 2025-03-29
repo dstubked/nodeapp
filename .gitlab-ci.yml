@@ -1,6 +1,6 @@
 stages:
   - trivy-scan
-  - kubiscan
+  - kubescape
   - build
   - deploy
 
@@ -19,22 +19,20 @@ trivy-scan:
     - echo "Scanning for vulnerabilities..."
     - trivy fs --scanners misconfig,vuln,secret --exit-code 0 --severity HIGH,CRITICAL .
 
-kubiscan:
-  stage: kubiscan
-  image: python:3.8-slim
+kubescape:
+  stages:
+  - scan
+variables:
+  SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
+scan-rbac:
+  stage: scan
+  image: armosec/kubescape:latest
   script:
-    # Install dependencies and clone the KubiScan repository
-    - apt-get update && apt-get install -y git python3-pip
-    - git clone https://github.com/cyberark/KubiScan.git
-    - pip install -r KubiScan/requirements.txt
-    # Run KubiScan against all YAML files in the specified directory
-    - echo "Scanning RBAC manifests for risky permissions..."
-    - for file in $SCAN_DIR/*.yaml; do
-        echo "Scanning $file...";
-        python3 KubiScan/KubiScan.py scan --file $file | tee -a kubiscan-results.txt || echo "Scan completed with warnings/errors for $file.";
-      done
+    # Dynamically scan all YAML files in the specified directory
+    - echo "Scanning Kubernetes manifests with Kubescape..."
+    - kubescape scan --file $SCAN_DIR/*.yaml | tee kubescape-results.txt || echo "Scan completed with warnings/errors."
     # Output consolidated results to job logs
-    - cat kubiscan-results.txt
+    - cat kubescape-results.txt
 
 build:
   stage: build
