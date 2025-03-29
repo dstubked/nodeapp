@@ -21,7 +21,7 @@ trivy-scan:
 
 kubescape:
   stage: kubescape
-  image: armosec/kubescape:latest
+  image: kubescape/kubescape:latest
   script:
     # Dynamically scan all YAML files in the specified directory
     - echo "Scanning Kubernetes manifests with Kubescape..."
