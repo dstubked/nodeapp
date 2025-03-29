@@ -57,15 +57,12 @@ deploy:
     - kubectl rollout status deployment/nodegoat
     # Wait for a new pod to be created and ready
     - echo "Waiting for NodeGoat pod to be ready..."
-    - NEW_NODEGOAT_POD=""
-    - until [ ! "$(kubectl get pods --selector=app=nodegoat --field-selector=status.phase=Running \
-        --output=jsonpath='{.items[*].metadata.name}')" ]; do
+    - until [ ! -z "$(kubectl get pods --selector=app=nodegoat --field-selector=status.phase=Running --output=jsonpath='{.items[*].metadata.name}')" ]; do
         echo "Waiting for new pod...";
         sleep 5;
       done
     # Get the name of the new pod once it's ready
-    - NEW_NODEGOAT_POD=$(kubectl get pods --selector=app=nodegoat --field-selector=status.phase=Running \
-        --output=jsonpath='{.items[0].metadata.name}')
+    - NEW_NODEGOAT_POD=$(kubectl get pods --selector=app=nodegoat --field-selector=status.phase=Running --output=jsonpath='{.items[0].metadata.name}')
     # Run the seed command inside the new NodeGoat pod
     - echo "Running database seed command in pod $NEW_NODEGOAT_POD..."
     - kubectl exec $NEW_NODEGOAT_POD -- npm run db:seed
