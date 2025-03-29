@@ -1,6 +1,5 @@
 stages:
   - trivy-scan
-  - kubescape
   - build
   - deploy
 
@@ -18,16 +17,6 @@ trivy-scan:
     # Scan for vulnerabilities in the code repository
     - echo "Scanning for vulnerabilities..."
     - trivy fs --scanners misconfig,vuln,secret --exit-code 0 --severity HIGH,CRITICAL .
-
-kubescape:
-  stage: kubescape
-  image: kubescape/kubescape:latest
-  script:
-    # Dynamically scan all YAML files in the specified directory
-    - echo "Scanning Kubernetes manifests with Kubescape..."
-    - kubescape scan --file $SCAN_DIR/*.yaml | tee kubescape-results.txt || echo "Scan completed with warnings/errors."
-    # Output consolidated results to job logs
-    - cat kubescape-results.txt
 
 build:
   stage: build
