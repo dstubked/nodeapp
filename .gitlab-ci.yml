@@ -1,10 +1,21 @@
 stages:
+  - scan
   - build
   - deploy
 
 variables:
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
   KUBECONFIG_SECRET_ARN: "arn:aws:secretsmanager:ap-southeast-1:805832121984:secret:eks-db-stack/kubeconfig-b2V0mI"
+
+scan:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    # Scan for vulnerabilities in the code repository
+    - echo "Scanning for vulnerabilities..."
+    - trivy fs --scanners misconfig,vuln,secret --exit-code 1 --severity HIGH,CRITICAL .
 
 build:
   stage: build
