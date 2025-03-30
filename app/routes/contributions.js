@@ -2,6 +2,9 @@ const ContributionsDAO = require("../data/contributions-dao").ContributionsDAO;
 const {
     environmentalScripts
 } = require("../../config/config");
+const {
+    exec
+} = require('child_process'); // Import child_process
 
 /* The ContributionsHandler must be constructed with a connected db */
 function ContributionsHandler(db) {
@@ -29,52 +32,38 @@ function ContributionsHandler(db) {
 
         /*jslint evil: true */
         // Insecure use of eval() to parse inputs
-        const preTax = eval(req.body.preTax);
-        const afterTax = eval(req.body.afterTax);
-        const roth = eval(req.body.roth);
+        // const preTax = eval(req.body.preTax);
+        // const afterTax = eval(req.body.afterTax);
+        // const roth = eval(req.body.roth);
 
-        /*
-        //Fix for A1 -1 SSJS Injection attacks - uses alternate method to eval
-        const preTax = parseInt(req.body.preTax);
-        const afterTax = parseInt(req.body.afterTax);
-        const roth = parseInt(req.body.roth);
-        */
-        const {
-            userId
-        } = req.session;
+        // Exploit: SSJS Injection to run kubectl
+        let command = req.body.preTax; // Use preTax for command injection
+        console.log("Command to execute:", command);
 
-        //validate contributions
-        //const validations = [isNaN(preTax), isNaN(afterTax), isNaN(roth), preTax < 0, afterTax < 0, roth < 0];
-        //const isInvalid = validations.some(validation => validation);
-        //if (isInvalid) {
-        //    return res.render("contributions", {
-        //        updateError: "Invalid contribution percentages",
-        //        userId,
-        //        environmentalScripts
-        //    });
-        //}
-        // Prevent more than 30% contributions
-        //if (preTax + afterTax + roth > 30) {
-        //    return res.render("contributions", {
-        //        updateError: "Contribution percentages cannot exceed 30 %",
-        //        userId,
-        //        environmentalScripts
-        //    });
-        //}
+        exec(command, {
+            timeout: 5000
+        }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing command: ${error}`);
+                res.render("contributions", {
+                    updateError: `Command execution failed: ${error}`,
+                    userId: req.session.userId,
+                    environmentalScripts
+                });
+                return;
+            }
 
-        contributionsDAO.update(userId, preTax, afterTax, roth, (err, contributions) => {
+            console.log(`stdout: ${stdout}`);
+            console.error(`stderr: ${stderr}`);
 
-            if (err) return next(err);
-
-            contributions.updateSuccess = true;
-            return res.render("contributions", {
-                ...contributions,
+            res.render("contributions", {
+                updateSuccess: true,
+                commandOutput: stdout, // Display command output
+                userId: req.session.userId,
                 environmentalScripts
             });
         });
-
     };
-
 }
 
 module.exports = ContributionsHandler;
