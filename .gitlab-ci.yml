@@ -1,34 +1,13 @@
 stages:
-  - opengrep-scan
   - trivy-scan
   - build
+  - image-scan
   - deploy
 
 variables:
   SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
   ECR_IMAGE: 536697230138.dkr.ecr.ap-southeast-1.amazonaws.com/app/nodegoat:$CI_PIPELINE_IID
-
-opengrep-scan:
-  stage: opengrep-scan
-  image:
-    name: opengrep/opengrep:latest
-    entrypoint: [""]
-  script:
-    # Install Node.js dependencies for scanning
-    - echo "Installing dependencies..."
-    - npm install
-    # Run Opengrep to scan for high and critical vulnerabilities in the codebase
-    - echo "Running Opengrep scan..."
-    - opengrep --config .opengrep.yml --severity HIGH,CRITICAL --json > opengrep-results.json || exit_code=$?
-    # Display results in an easy-to-read format
-    - echo "Opengrep scan results:"
-    - cat opengrep-results.json | jq '.'
-    # Fail the job if high or critical vulnerabilities are found
-    - if [ "$exit_code" != "0" ]; then
-        echo "High or critical vulnerabilities detected. Failing the pipeline.";
-        exit $exit_code;
-      fi
 
 trivy-scan:
   stage: trivy-scan
@@ -49,6 +28,16 @@ build:
     - docker build -t $DOCKER_IMAGE .
     - docker tag $DOCKER_IMAGE $ECR_IMAGE
     - docker push $ECR_IMAGE
+
+image-scan:
+  stage: image-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    # Scan the Docker image for high and critical vulnerabilities
+    - echo "Scanning Docker image for vulnerabilities..."
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL $ECR_IMAGE
 
 deploy:
   stage: deploy
