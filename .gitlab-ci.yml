@@ -1,10 +1,15 @@
 stages:
   - trivy-scan
+  - test
   - build
   - image-scan
   - deploy
 
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
 variables:
+  GITLAB_ADVANCED_SAST_ENABLED: 'true'
   SCAN_DIR: "manifests" # Directory containing Kubernetes YAML files
   DOCKER_IMAGE: dstubked/nodegoat:$CI_PIPELINE_IID
   ECR_IMAGE: 536697230138.dkr.ecr.ap-southeast-1.amazonaws.com/app/nodegoat:$CI_PIPELINE_IID
