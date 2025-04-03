@@ -10,9 +10,6 @@ RUN apk add --no-cache curl && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/
 
-# Copy wizexercise.txt into /usr/src/app directory
-COPY wizexercise.txt $WORKDIR
-
 FROM node:16-alpine
 ENV USER node
 ENV WORKDIR /home/$USER/app
