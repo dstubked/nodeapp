@@ -25,6 +25,13 @@ The database comes pre-populated with these user accounts created as part of the
 
 ## How to Set Up Your Copy of NodeGoat
 
+Variables to Define:
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+KUBECONFIG_SECRET_ARN
+MONGODB_INSTANCE_ARN
+MONGODB_SECRET_ARN
+
 ### OPTION 1 - Run NodeGoat on your machine
 
 1) Install [Node.js](http://nodejs.org/) - NodeGoat requires Node v8 or above
